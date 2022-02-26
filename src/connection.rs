@@ -1,8 +1,8 @@
+use std::collections::HashMap;
 use std::io::Result as IOResult;
 use std::io::{Read, Write};
 use std::net::{TcpStream};
-use crate::header::Header;
-use crate::request::Request;
+use crate::io::Request;
 
 #[derive(Debug)]
 pub enum ConnectionError {}
@@ -32,20 +32,17 @@ impl Connection {
         let [req_method, req_path, _req_version] = <[&str; 3]>::try_from(req_v).unwrap();
 
         let headers = {
-            let mut headers: Vec<Header> = vec![];
+            let mut headers: HashMap<String, String> = HashMap::new();
 
             // We skip the first line, which corresponds to the METHOD line
             for header_line in incoming_request.iter().skip(1) {
-                let mut header_tuple = header_line.split(": ").collect::<Vec<&str>>();
+                let header_tuple = header_line.split(": ").collect::<Vec<&str>>();
 
                 if header_tuple.len() != 2 {
                     continue;
                 }
 
-                headers.push(Header::new(
-                    header_tuple[0].to_string(),
-                    header_tuple[1].to_string(),
-                ))
+                headers.insert(header_tuple[0].to_string(), header_tuple[1].to_string());
             }
 
             headers
@@ -61,7 +58,7 @@ impl Connection {
         )
     }
 
-    pub fn write(&mut self, bytes: &Vec<u8>) -> IOResult<usize> {
+    pub fn write(&mut self, bytes: &[u8]) -> IOResult<usize> {
         self.stream.write(bytes)
     }
 }

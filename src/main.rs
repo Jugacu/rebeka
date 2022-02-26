@@ -1,32 +1,35 @@
+pub(crate) mod io;
+
 pub(crate) mod server;
-pub(crate) mod header;
-pub(crate) mod request;
 pub(crate) mod connection;
 
+use std::collections::HashMap;
 use std::fs;
-use std::io::{Read, Write};
 use std::path::{Path};
+use crate::io::Response;
 
 use crate::server::*;
 
 fn main() {
-    create_server("0.0.0.0", 80, |mut con| {
-        let request = con.read().unwrap();
-
+    create_server("0.0.0.0", 80, |mut request| {
         let final_path = ["./public".to_string(), request.path].join("");
 
         let path = Path::new(&final_path);
 
         match fs::read(path) {
             Ok(contents) => {
-                let headers = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n".as_bytes().to_vec();
-
-                con.write(&[headers, contents].concat()).unwrap();
+                Response::new(
+                    HashMap::from([]),
+                    200.into(),
+                    contents,
+                )
             }
             Err(err) => {
-                let headers = "HTTP/1.1 404 Not found\r\nContent-Type: text/html\r\n\r\n".as_bytes().to_vec();
-
-                con.write(&[headers].concat()).unwrap();
+                Response::new(
+                    HashMap::from([]),
+                    404.into(),
+                    "".as_bytes().to_vec(),
+                )
             }
         }
     });
